@@ -44,13 +44,16 @@ _start = V2P_WO(entry)
 .globl entry
 entry:
   # Turn on page size extension for 4Mbyte pages
+  # 开启大页扩展
   movl    %cr4, %eax
   orl     $(CR4_PSE), %eax
   movl    %eax, %cr4
   # Set page directory
+  # 设置页目录
   movl    $(V2P_WO(entrypgdir)), %eax
   movl    %eax, %cr3
   # Turn on paging.
+  # 开启分页
   movl    %cr0, %eax
   orl     $(CR0_PG|CR0_WP), %eax
   movl    %eax, %cr0

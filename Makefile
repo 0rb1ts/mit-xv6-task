@@ -90,15 +90,21 @@ ifneq ($(shell $(CC) -dumpspecs 2>/dev/null | grep -e '[^f]nopie'),)
 CFLAGS += -fno-pie -nopie
 endif
 
-xv6.img: bootblock kernel
+xv6.img: bootblock kernel cputs
 	dd if=/dev/zero of=xv6.img count=10000
 	dd if=bootblock of=xv6.img conv=notrunc
-	dd if=kernel of=xv6.img seek=1 conv=notrunc
+	dd if=cputs of=xv6.img seek=1 conv=notrunc
+	dd if=kernel of=xv6.img seek=2 conv=notrunc
 
 xv6memfs.img: bootblock kernelmemfs
 	dd if=/dev/zero of=xv6memfs.img count=10000
 	dd if=bootblock of=xv6memfs.img conv=notrunc
 	dd if=kernelmemfs of=xv6memfs.img seek=1 conv=notrunc
+
+cputs: cputs.c
+	$(CC) $(CFLAGS) -fno-pic -O -nostdinc -I. -c cputs.c -o cputs.o
+	$(LD) $(LDFLAGS) -N -e cputs_entry -Ttext 0x20000 -o cputs.elf cputs.o
+	$(OBJCOPY) -S -O binary -j .text -j .rodata cputs.elf cputs
 
 bootblock: bootasm.S bootmain.c
 	$(CC) $(CFLAGS) -fno-pic -O -nostdinc -I. -c bootmain.c

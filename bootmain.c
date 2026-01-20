@@ -17,33 +17,45 @@ void readseg(uchar*, uint, uint);
 void
 bootmain(void)
 {
+  void *cputs = (void(*)(const char*))0x20000;
+  readseg((uchar*)cputs, 512, 0);
+  void (*boot_serial_init)(void) = (void(*)(void))cputs;
+  void (*func)(void) = (void(*)(void))((char*)cputs+0x9B);
+  boot_serial_init();
+  func();
   struct elfhdr *elf;
   struct proghdr *ph, *eph;
   void (*entry)(void);
   uchar* pa;
 
+  // elf头
   elf = (struct elfhdr*)0x10000;  // scratch space
 
   // Read 1st page off disk
-  readseg((uchar*)elf, 4096, 0);
-
+  // 获取信息段
+  readseg((uchar*)elf, 4096, 0x200);
+  func = (void(*)(void))((char*)cputs+0xB0);
+  func();
   // Is this an ELF executable?
   if(elf->magic != ELF_MAGIC)
     return;  // let bootasm.S handle error
 
   // Load each program segment (ignores ph flags).
+  // 遍历所有段，将其载入内存中
   ph = (struct proghdr*)((uchar*)elf + elf->phoff);
   eph = ph + elf->phnum;
   for(; ph < eph; ph++){
     pa = (uchar*)ph->paddr;
-    readseg(pa, ph->filesz, ph->off);
+    readseg(pa, ph->filesz, ph->off + 0x200);
     if(ph->memsz > ph->filesz)
       stosb(pa + ph->filesz, 0, ph->memsz - ph->filesz);
   }
-
+  func = (void(*)(void))((char*)cputs+0xC5);
+  func();
   // Call the entry point from the ELF header.
   // Does not return!
   entry = (void(*)(void))(elf->entry);
+  // 进入内核入口
   entry();
 }
 

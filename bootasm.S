@@ -10,6 +10,7 @@
 .code16                       # Assemble for 16-bit mode
 .globl start
 start:
+  # 关中断
   cli                         # BIOS enabled interrupts; disable
 
   # Zero data segment registers DS, ES, and SS.
@@ -20,7 +21,7 @@ start:
 
   # Physical address line A20 is tied to zero so that the first PCs 
   # with 2 MB would run software that assumed 1 MB.  Undo that.
-seta20.1:
+seta20.1: # 设置A20地址线，清空20及以上地址位
   inb     $0x64,%al               # Wait for not busy
   testb   $0x2,%al
   jnz     seta20.1
